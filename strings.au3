@@ -1,3 +1,4 @@
+#include-once
 Global $STRINGS_Title = "File Merger"
 Global $STRINGS_SourceLabel = "Source Folder (Select the folder containing the files to merge):"
 Global $STRINGS_DestLabel = "Destination Folder (Select where to save merged files):"
