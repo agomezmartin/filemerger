@@ -23,6 +23,8 @@ Func MergeFiles($sourcePath, $destPath)
         If IsArray($files) Then
             If $fileTypes[$i] = ".doc" Or $fileTypes[$i] = ".docx" Then
                 MergeWordFiles($files, $sourcePath, $destPath, $fileTypes[$i])
+            ElseIf $fileTypes[$i] = ".ppt" Or $fileTypes[$i] = ".pptx" Then
+                MergePowerPointFiles($files, $sourcePath, $destPath, $fileTypes[$i])
             Else
                 MergeByType($files, $sourcePath, $destPath, $fileTypes[$i])
             EndIf
@@ -88,4 +90,43 @@ Func MergeWordFiles($files, $sourcePath, $destPath, $fileType)
 
     $oDoc.Close(False)
     $oWord.Quit()
+EndFunc
+
+Func MergePowerPointFiles($files, $sourcePath, $destPath, $fileType)
+    Local $oPPT = ObjCreate("PowerPoint.Application")
+    If Not IsObj($oPPT) Then
+        MsgBox(16, $ERRORS_Title, $ERRORS_NoPPTCOM)
+        Return
+    EndIf
+
+    $oPPT.Visible = False
+    Local $oPresentation = $oPPT.Presentations.Add
+    Local $outputFile = $destPath & "\Merged" & $fileType
+
+    For $i = 1 To $files[0]
+        Local $fullPath = $sourcePath & "\" & $files[$i]
+        Local $oTempPresentation = $oPPT.Presentations.Open($fullPath)
+
+        ; Loop through all slides in the current PowerPoint file
+        For $j = 1 To $oTempPresentation.Slides.Count
+            Local $oSlide = $oTempPresentation.Slides.Item($j)
+
+            ; Copy the slide and paste it into the destination presentation
+            $oSlide.Copy
+            $oPresentation.Slides.Paste
+        Next
+
+        $oTempPresentation.Close
+    Next
+
+    ; Save the merged presentation to the output path
+    $oPresentation.SaveAs($outputFile)
+    If @error Then
+        MsgBox(16, $ERRORS_Title, $ERRORS_CannotWrite & $outputFile)
+    Else
+        MsgBox(64, $STRINGS_MergeCompleteTitle, $STRINGS_MergeCompleteMsg & $fileType)
+    EndIf
+
+    $oPresentation.Close
+    $oPPT.Quit()
 EndFunc
