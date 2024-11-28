@@ -1,62 +1,35 @@
-#include "strings.au3"  ; Import string constants
+#include <File.au3>
+#include <Array.au3>
+#include <Strings.au3>
+#include <ErrorMessages.au3>
 
-; Check if the function is already defined
-#IfNotDef _FileListToArray
-    ; Function to list files in a directory
-    Func _FileListToArray($sDir, $sPattern = "*.*", $iFlag = 0)
-        Local $aFiles[1]
-        Local $hSearch, $sFile
-        $hSearch = FileFindFirstFile($sDir & "\" & $sPattern)
-        If $hSearch = -1 Then Return SetError(1, 0, "")
+Func BrowseForFolder($prompt)
+    Local $folder = FileSelectFolder($prompt, "", 1)
+    If @error Then Return ""
+    Return $folder
+EndFunc
 
-        While 1
-            $sFile = FileFindNextFile($hSearch)
-            If @error Then ExitLoop
-            If BitAND(FileGetAttrib($sFile), 16) = 0 Then ; Ignore directories
-                $aFiles[0] += 1
-                ReDim $aFiles[$aFiles[0] + 1]
-                $aFiles[$aFiles[0]] = $sFile
-            EndIf
-        Wend
-        FileClose($hSearch)
-        If $aFiles[0] = 0 Then Return SetError(1, 0, "")
-        Return $aFiles
-    EndFunc
-#EndIf
-
-; Function to merge files
-Func MergeFiles($sInputPath, $sOutputPath)
-    ; Validate that there are text files in the input path
-    $aFiles = _FileListToArray($sInputPath, "*.txt", 1)
-    If @error Then
-        Return $sErrorNoTextFiles
-    Else
-        ; Merge files
-        $sMergedContent = ""
-        For $i = 1 To $aFiles[0]
-            $sFilePath = $sInputPath & "\" & $aFiles[$i]
-            $sMergedContent &= FileRead($sFilePath) & @CRLF
-        Next
-
-        ; Save the merged content to the output folder
-        $sOutputFile = $sOutputPath & "\merged_output.txt"
-        $hFile = FileOpen($sOutputFile, 2) ; 2 = overwrite mode
-        If $hFile = -1 Then
-            Return $sErrorFailedToOpenFile
-        Else
-            FileWrite($hFile, $sMergedContent)
-            FileClose($hFile)
-            Return $sSuccessFilesMerged
-        EndIf
+Func MergeFiles($sourcePath, $destPath)
+    If Not FileExists($sourcePath) Or Not FileExists($destPath) Then
+        MsgBox(16, $ERRORS_Title, $ERRORS_InvalidPath)
+        Return
     EndIf
+
+    Local $fileTypes = [".txt", ".doc", ".docx", ".xlsx", ".xls", ".xlsm", ".ppt", ".pptx", ".xml", ".html", ".po", ".vb", ".dita"]
+
+    For $i = 0 To UBound($fileTypes) - 1
+        Local $files = _FileListToArray($sourcePath, "*" & $fileTypes[$i])
+        If IsArray($files) Then
+            MergeByType($files, $sourcePath, $destPath, $fileTypes[$i])
+        EndIf
+    Next
 EndFunc
 
-; Function to display error message
-Func ShowError($sMessage)
-    MsgBox($MB_ICONERROR, "Error", $sMessage)
-EndFunc
-
-; Function to display success message
-Func ShowSuccess($sMessage)
-    MsgBox($MB_ICONINFORMATION, "Success", $sMessage)
+Func MergeByType($files, $sourcePath, $destPath, $fileType)
+    Local $outputFile = $destPath & "\Merged" & $fileType
+    For $i = 1 To $files[0]
+        Local $fullPath = $sourcePath & "\" & $files[$i]
+        _FileWriteToLine($outputFile, $i, FileRead($fullPath), 1)
+    Next
+    MsgBox(64, $STRINGS_MergeCompleteTitle, $STRINGS_MergeCompleteMsg & $fileType)
 EndFunc

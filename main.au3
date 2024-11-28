@@ -1,68 +1,34 @@
 #include <GUIConstantsEx.au3>
-#include <MsgBoxConstants.au3>
-#include "functions.au3" ; Import functions from the external file
-#include "strings.au3"   ; Import string constants
+#include <WindowsConstants.au3>
+#include <Functions.au3>
+#include <Strings.au3>
+#include <ErrorMessages.au3>
 
-Global $sInputPath = "", $sOutputPath = ""
+; Initialize the GUI
+Opt("GUICoordMode", 1)
+Opt("GUIResizeMode", 1)
 
-; Create GUI window
-$hGUI = GUICreate("File Merger", 400, 250)
+Global $hGUI = GUICreate($STRINGS_Title, 400, 300, -1, -1, $WS_SIZEBOX + $WS_SYSMENU)
+Global $txtSource = GUICtrlCreateInput("", 10, 10, 280, 20)
+Global $btnBrowseSource = GUICtrlCreateButton($STRINGS_Browse, 300, 10, 80, 20)
+Global $txtDestination = GUICtrlCreateInput("", 10, 50, 280, 20)
+Global $btnBrowseDest = GUICtrlCreateButton($STRINGS_Browse, 300, 50, 80, 20)
+Global $btnMerge = GUICtrlCreateButton($STRINGS_Merge, 150, 100, 100, 30)
 
-; Input Path
-GUICtrlCreateLabel($sLabelSelectInputPath, 10, 10)
-$hInputPathButton = GUICtrlCreateButton($sButtonBrowse, 130, 10, 80, 30)
-$hInputPathDisplay = GUICtrlCreateLabel("", 220, 10, 160, 30) ; Label to display input path
+GUISetState(@SW_SHOW)
 
-; Output Path
-GUICtrlCreateLabel($sLabelSelectOutputPath, 10, 60)
-$hOutputPathButton = GUICtrlCreateButton($sButtonBrowse, 130, 60, 80, 30)
-$hOutputPathDisplay = GUICtrlCreateLabel("", 220, 60, 160, 30) ; Label to display output path
-
-; Merge Button
-$hMergeButton = GUICtrlCreateButton($sButtonMerge, 150, 120, 100, 40)
-
-; Event loop
-GUISetState()
-
+; Main loop
 While 1
-    $nMsg = GUIGetMsg()
-
-    Switch $nMsg
+    Switch GUIGetMsg()
         Case $GUI_EVENT_CLOSE
             Exit
-
-        Case $hInputPathButton
-            ; Input Path Selection
-            $sInputPath = FileSelectFolder("Select Folder Containing Text Files", $sInputPath)
-            If @error Then
-                ShowError($sErrorNoInputFolderSelected)
-            Else
-                ; Update input path label
-                GUICtrlSetData($hInputPathDisplay, $sInputPath)
-            EndIf
-
-        Case $hOutputPathButton
-            ; Output Path Selection
-            $sOutputPath = FileSelectFolder("Select Output Folder", $sOutputPath)
-            If @error Then
-                ShowError($sErrorNoOutputFolderSelected)
-            Else
-                ; Update output path label
-                GUICtrlSetData($hOutputPathDisplay, $sOutputPath)
-            EndIf
-
-        Case $hMergeButton
-            ; Merge Button Logic
-            If StringLen($sInputPath) == 0 Or StringLen($sOutputPath) == 0 Then
-                ShowError($sErrorMissingPaths)
-            Else
-                ; Call the function to merge files
-                $sResult = MergeFiles($sInputPath, $sOutputPath)
-                If StringInStr($sResult, $sErrorNoTextFiles) > 0 Or StringInStr($sResult, $sErrorFailedToOpenFile) > 0 Then
-                    ShowError($sResult)
-                Else
-                    ShowSuccess($sResult)
-                EndIf
-            EndIf
+        Case $btnBrowseSource
+            $sourcePath = BrowseForFolder($STRINGS_SelectSource)
+            If $sourcePath <> "" Then GUICtrlSetData($txtSource, $sourcePath)
+        Case $btnBrowseDest
+            $destPath = BrowseForFolder($STRINGS_SelectDestination)
+            If $destPath <> "" Then GUICtrlSetData($txtDestination, $destPath)
+        Case $btnMerge
+            MergeFiles(GUICtrlRead($txtSource), GUICtrlRead($txtDestination))
     EndSwitch
 WEnd
