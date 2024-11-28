@@ -21,15 +21,33 @@ Func MergeFiles($sourcePath, $destPath)
         Local $files = _FileListToArray($sourcePath, "*" & $fileTypes[$i])
         If IsArray($files) Then
             MergeByType($files, $sourcePath, $destPath, $fileTypes[$i])
+        Else
+            MsgBox(48, $STRINGS_NoFilesFoundTitle, $STRINGS_NoFilesFoundMsg & $fileTypes[$i])
         EndIf
     Next
 EndFunc
 
 Func MergeByType($files, $sourcePath, $destPath, $fileType)
     Local $outputFile = $destPath & "\Merged" & $fileType
+    Local $hFile = FileOpen($outputFile, $FO_OVERWRITE)
+
+    If $hFile = -1 Then
+        MsgBox(16, $ERRORS_Title, $ERRORS_CannotWrite & $outputFile)
+        Return
+    EndIf
+
     For $i = 1 To $files[0]
         Local $fullPath = $sourcePath & "\" & $files[$i]
-        _FileWriteToLine($outputFile, $i, FileRead($fullPath), 1)
+        Local $fileContent = FileRead($fullPath)
+
+        If @error Then
+            MsgBox(16, $ERRORS_Title, $ERRORS_FileReadError & $files[$i])
+            ContinueLoop
+        EndIf
+
+        FileWrite($hFile, $fileContent & @CRLF) ; Add content and newline to separate files
     Next
+
+    FileClose($hFile)
     MsgBox(64, $STRINGS_MergeCompleteTitle, $STRINGS_MergeCompleteMsg & $fileType)
 EndFunc
